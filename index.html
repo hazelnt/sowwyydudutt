@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I’m sorry 💗</title>
+<style>
+:root{--bg:#fff0f3;--card:#ffffff;--text:#4a1d2b;--accent:#ff4d79;--accent2:#c9184a;--muted:#8a5a68;--border:#ffc2d1;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2a1219;--card:#3a1a24;--text:#ffe3ea;--accent:#ff6b8f;--accent2:#ff8fa8;--muted:#e0a3b3;--border:#6b2d41}}
+:root[data-theme="dark"]{--bg:#2a1219;--card:#3a1a24;--text:#ffe3ea;--accent:#ff6b8f;--accent2:#ff8fa8;--muted:#e0a3b3;--border:#6b2d41}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow-x:hidden}
+.card{background:var(--card);border:2px solid var(--border);border-radius:24px;padding:32px 24px;width:min(92vw,460px);text-align:center;box-shadow:0 10px 30px rgba(201,24,74,.15)}
+.emoji{font-size:64px;line-height:1}
+h1{font-size:28px;margin:12px 0 6px}
+p{color:var(--muted);margin:0 0 20px}
+.btns{display:flex;gap:16px;align-items:center;justify-content:center;min-height:120px}
+button{font:inherit;font-weight:700;border:none;border-radius:999px;cursor:pointer;transition:transform .15s,font-size .15s,padding .15s}
+#yes{background:var(--accent);color:#fff;padding:12px 28px;font-size:20px;position:relative;z-index:5;will-change:transform}
+#no{background:#d9d2d4;color:#333;padding:12px 28px;font-size:20px}
+#no.run{position:fixed;z-index:4;transition:left .25s ease,top .25s ease}
+.hidden{display:none}
+textarea{width:100%;min-height:130px;border:2px solid var(--border);border-radius:16px;padding:12px;font:inherit;background:var(--bg);color:var(--text);resize:vertical}
+#send{background:var(--accent);color:#fff;padding:12px 28px;font-size:18px;margin-top:14px}
+canvas{position:fixed;inset:0;pointer-events:none;z-index:50}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<main class="card">
+  <section id="ask">
+    <div class="emoji" id="face">🥺</div>
+    <h1 id="title">Please forgive me?</h1>
+    <p id="sub">I’m really sorry. I love you.</p>
+    <div class="btns" id="btns">
+      <button id="yes">Yes 💖</button>
+      <button id="no">No</button>
+    </div>
+  </section>
+  <section id="reply" class="hidden">
+    <div class="emoji">🥰</div>
+    <h1>Thank you, my love!</h1>
+    <p>Want to tell me something? Write it here:</p>
+    <textarea id="msg" placeholder="Type your message to me…"></textarea>
+    <button id="send">Send to me 💌</button>
+    <p id="status" style="margin-top:14px;font-weight:700"></p>
+  </section>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+// 1) Paste YOUR Firebase web app config here (Project settings > Your apps > Web app)
+const firebaseConfig = {
+  apiKey: "AIzaSyADvNAOfpUUvLECL-i-xCT5WQ6jZAonivs",
+  authDomain: "sowwy-6934d.firebaseapp.com",
+  projectId: "sowwy-6934d",
+  storageBucket: "sowwy-6934d.firebasestorage.app",
+  messagingSenderId: "587535312296",
+  appId: "1:587535312296:web:fb55c45dad6cc4b755a99d",
+  measurementId: "G-51WNVJD929"
+};
+const db = getFirestore(initializeApp(firebaseConfig));
+
+(function(){
+  var EMAIL="ghassanikece@gmail.com";
+  var yes=document.getElementById("yes"),no=document.getElementById("no");
+  var clicks=0,running=false,px=innerWidth/2,py=innerHeight/2;
+  var texts=["Are you sure? 🥹","Pretty please? 😢","Okay, catch me then! 😜"];
+  var faces=["🥺","😢","😭"];
+
+  no.addEventListener("click",function(e){
+    clicks++;
+    var ns=Math.max(10,20-clicks*4),ys=20+clicks*10;
+    no.style.fontSize=ns+"px";
+    no.style.padding=Math.max(5,12-clicks*3)+"px "+Math.max(10,28-clicks*7)+"px";
+    yes.style.fontSize=ys+"px";
+    yes.style.padding=(12+clicks*5)+"px "+(28+clicks*10)+"px";
+    document.getElementById("title").textContent=texts[Math.min(clicks-1,2)];
+    document.getElementById("face").textContent=faces[Math.min(clicks-1,2)];
+    if(clicks>=3&&!running){startRun();}
+  });
+
+  function startRun(){
+    running=true;
+    var r=no.getBoundingClientRect();
+    no.classList.add("run");
+    no.style.left=r.left+"px";no.style.top=r.top+"px";
+    // keep layout space so the card doesn't jump
+    var ph=document.createElement("span");ph.style.width=r.width+"px";ph.style.height="1px";
+    no.parentNode.appendChild(ph);
+    requestAnimationFrame(loop);
+  }
+
+  function jump(){
+    var r=no.getBoundingClientRect(),m=10;
+    var maxX=innerWidth-r.width-m,maxY=innerHeight-r.height-m,x,y,t=0;
+    do{
+      x=m+Math.random()*(maxX-m);y=m+Math.random()*(maxY-m);t++;
+    }while(t<20&&Math.hypot(x+r.width/2-px,y+r.height/2-py)<180);
+    no.style.left=x+"px";no.style.top=y+"px";
+  }
+
+  function track(e){
+    var p=e.touches?e.touches[0]:e;px=p.clientX;py=p.clientY;
+    if(running){
+      var r=no.getBoundingClientRect();
+      if(Math.hypot(r.left+r.width/2-px,r.top+r.height/2-py)<110){jump();}
+    }
+  }
+  addEventListener("mousemove",track);
+  addEventListener("touchstart",track,{passive:true});
+  addEventListener("touchmove",track,{passive:true});
+  no.addEventListener("pointerdown",function(e){if(running){e.preventDefault();jump();}});
+
+  // Yes drifts toward the cursor
+  var tx=0,ty=0;
+  function loop(){
+    if(!document.getElementById("ask").classList.contains("hidden")){
+      yes.style.transform="none";
+      var b=yes.getBoundingClientRect();
+      var bx=b.left+b.width/2-tx,by=b.top+b.height/2-ty;
+      tx+=(px-bx-tx)*0.06;ty+=(py-by-ty)*0.06;
+      yes.style.transform="translate("+tx+"px,"+ty+"px)";
+      requestAnimationFrame(loop);
+    }
+  }
+
+  yes.addEventListener("click",function(){
+    document.getElementById("ask").classList.add("hidden");
+    no.classList.add("hidden");
+    document.getElementById("reply").classList.remove("hidden");
+    boom();
+  });
+
+  document.getElementById("send").addEventListener("click",function(){
+    var box=document.getElementById("msg"),text=box.value.trim(),btn=this,st=document.getElementById("status");
+    if(!text){box.focus();return;}
+    if(String(firebaseConfig.apiKey).indexOf("PASTE_")===0){st.textContent="Didn’t send. Reason: the Firebase config was not filled in the file";return;}
+    btn.disabled=true;btn.textContent="Sending…";st.textContent="";
+    addDoc(collection(db,"messages"),{text:text,createdAt:serverTimestamp()}).then(function(){
+      box.classList.add("hidden");btn.classList.add("hidden");
+      st.textContent="Sent!💗";boom();
+    }).catch(function(err){
+      btn.disabled=false;btn.textContent="Send to me 💌";
+      st.textContent="Didn’t send. Reason: "+((err&&(err.code||err.message))||"unknown");
+    });
+  });
+
+  // Confetti
+  var cv=document.getElementById("fx"),cx=cv.getContext("2d"),parts=[];
+  function size(){cv.width=innerWidth;cv.height=innerHeight;}
+  size();addEventListener("resize",size);
+  function boom(){
+    var cols=["#ff4d79","#ffb3c6","#ffd166","#06d6a0","#118ab2","#c9184a","#fff"];
+    for(var i=0;i<220;i++){
+      parts.push({x:innerWidth/2,y:innerHeight/2,vx:(Math.random()-.5)*18,vy:Math.random()*-16-3,w:6+Math.random()*6,h:8+Math.random()*8,c:cols[i%cols.length],r:Math.random()*6,vr:(Math.random()-.5)*.4,life:0});
+    }
+    for(var j=0;j<3;j++)setTimeout(function(){
+      for(var k=0;k<80;k++)parts.push({x:Math.random()*innerWidth,y:-10,vx:(Math.random()-.5)*4,vy:Math.random()*4+2,w:6+Math.random()*6,h:8+Math.random()*8,c:cols[k%cols.length],r:Math.random()*6,vr:(Math.random()-.5)*.4,life:0});
+    },500*(j+1));
+    anim();
+  }
+  var animating=false;
+  function anim(){
+    if(animating)return;animating=true;
+    (function f(){
+      cx.clearRect(0,0,cv.width,cv.height);
+      parts=parts.filter(function(p){return p.y<innerHeight+30;});
+      parts.forEach(function(p){
+        p.vy+=.35;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
+        cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w,p.h);cx.restore();
+      });
+      if(parts.length){requestAnimationFrame(f);}else{animating=false;cx.clearRect(0,0,cv.width,cv.height);}
+    })();
+  }
+})();
+</script>
+</body>
+</html>
